@@ -4,27 +4,26 @@ from requests import get
 from requests.exceptions import RequestException
 from contextlib import closing
 from bs4 import BeautifulSoup
-from itertools import imap
+import re
+import json
+from pprint import pprint 
 
-class Post(object):
-    image_url = ""
+class geo_coords(object):
+    latitude = ""
+    longitude = ""
+
+    def __init__(self, latitude, longitude):
+        self.latitude = latitude 
+        self.longitude = longitude
+
+class rightmove_property(object):
     url = ""
-    full_desc = ""
-    title = ""
-    post_id = ""
-    location = ""
-    date = ""
-
-    def __init__(self, url, title, post_id, location, date, full_desc, image_url):
+    address = ""
+    geo_coords = None
+    def __init__(self, url, address, geo_coords):
         self.url = url
-        self.title = title
-        self.post_id = post_id
-        self.location = location
-        self.date = date
-        self.full_desc = full_desc
-        self.image_url = image_url
-
-
+        self.address = address
+        self.geo_coords = geo_coords
 
 def simple_get(url):
     """
@@ -40,7 +39,7 @@ def simple_get(url):
                 return None
     except RequestException as e:
         log_error('Error during request to {0} : {1}'.format(url,str(e)))
-    	return None
+        return None
 
 def is_good_response(resp):
     """
@@ -59,104 +58,91 @@ def log_error(e):
     """
     print(e)
 
-def get_post_date(html):
+def get_lat_long(soup):
     """
-    get the date value from a given offer
+    get lat long of property from the minimap display
     """
-    if html is None: 
-        raise Exception('html cannot be null')
+    if soup is None:
+        raise Exception("soup cannot be None")
     
-    date = ""
-    post_details_divs = html.find(id='post_details').find_all('div')
-    if len(post_details_divs) == 1:
-        date = post_details_divs[0].text.strip("Date : ")
+    mini_map_src = soup.find("a", {"class" : "js-ga-minimap"}).img['src']
+    longitude = re.search('longitude=([^&]*)', mini_map_src).group(1)
+    latitude = re.search('latitude=([^&]*)', mini_map_src).group(1)
+    return geo_coords(latitude, longitude)
 
-    if len(post_details_divs) == 2:
-        date = post_details_divs[1].text.strip("Date : ")
-
-    return date
-
-def get_post_image_url(html):
-    if html is None:
-        raise Exception('html cannot be null')
-    image_element = html.find(id='post_thumbnail')
-    image_url = "NO IMAGE"
-    if image_element is not None:
-        image_url = image_element['src']
-
-    return image_url
+def get_street_name(rightmove_property):
+    if rightmove_property == None: 
+        raise Exception("rightmove_property cannot be None")
     
+    geo_coords = rightmove_property.geo_coords
+    if geo_coords == None: 
+        raise Exception("geo_coords cannot be None")
+    
+    data = None
+    route = None
+    with open('data.json') as data_file: 
+        data = json.load(data_file)
+        addresses = data['results']
+        for address in addresses:
+            address_parts = address['address_components']
+            for address_part in address_parts:
+                if 'route' in address_part['types']:
+                    route = address_part['long_name']
+                    print(route)
+        
+            if route in rightmove_property.address:
+                print("{} is in {}".format(route, rightmove_property.address))
+                break
+    return route
 
-def get_offer(url):
+def get_crime_stats(latitude, longitude):
     """
-    Get the full description for a given post
+    get crime stats 
+    """
+    police_url = "https://data.police.uk/api/crimes-street"
+    lat_long1 = "{},{}".format((latitude - 0.0035),(longitude - 0.0035))
+    lat_long2 = "{},{}".format((latitude + 0.0035),(longitude - 0.0035))
+    lat_long3 = "{},{}".format((latitude),(longitude + 0.0035))
+
+    api_args = "all-crime?poly={}:{}:{}&date=2017-01".format(lat_long1, lat_long2, lat_long3)
+    request_url = "{}/{}".format(police_url, api_args)
+    print(request_url)
+    response = simple_get(request_url)
+    return response
+
+def get_additional_prices_paid(street_name, town):
+    """
+    hit landregistry to see what prices houses sold for in the same area (road)
+    """
+    url_template = 'http://landregistry.data.gov.uk/app/ppd/ppd_data.csv?et%5B%5D=lrcommon%3Afreehold&et%5B%5D=lrcommon%3Aleasehold&limit=all&min_date=1+June+2000&nb%5B%5D=true&nb%5B%5D=false&ptype%5B%5D=lrcommon%3Adetached&ptype%5B%5D=lrcommon%3Asemi-detached&ptype%5B%5D=lrcommon%3Aterraced&street={street}&tc%5B%5D=ppd%3AstandardPricePaidTransaction&tc%5B%5D=ppd%3AadditionalPricePaidTransaction&town={town}'
+    url = url_template.replace('{town}', town)
+    url = url.replace('{street}', street_name.replace(' ', '+'))
+    print(url)
+
+def get_rightmove_property(url):
+    """
+    Pase html of the given URL to get a property
     """
     response = simple_get(url)
     if response is None:
         raise Exception('Error retrieving content at {}'.format(url))
-    html = BeautifulSoup(response, 'html.parser')
-    post_id = html.find(id='group_post').find('header').find_all('h2')[0].text.replace("Post ID: ", "")
-    title = getattr(html.find(id="group_post").find('header').find_all('h2')[1], 'text', '').replace("OFFER: ", "")
-    location = html.find(id='post_details').find_all('div')[0].text.replace("Location :", "")
-    date = get_post_date(html) 
-    full_desc = html.find(id='group_post').find("p").text.lower()   
-    image_element = html.find(id='post_thumbnail')
-    image_url = get_post_image_url(html)
-    offer = Post(url, title, post_id, location, date, full_desc, image_url)
-    return offer
+    soup = BeautifulSoup(response, 'html.parser')
+    address = soup.find(itemprop = 'streetAddress')['content']
+    geo_coords = get_lat_long(soup)
+    rm_property = rightmove_property(url, address, geo_coords)
+    street_name = get_street_name(rm_property)
+    get_additional_prices_paid(street_name, 'bordon') 
+    return rm_property
 
-def get_offers(url):
-    """
-    Get all offers on the page
-    """
-    response = simple_get(url)
-    if response is None:
-        raise Exception('Error retrieving content at {}'.format(url))
-    html = BeautifulSoup(response, 'html.parser')
-    offers = set()
-    for tr in html.select('tr'):
-        tds =  tr.select('td')
-        if 'OFFER' in tds[0].text:
-            for td in tr.select('td')[1:2]:
-                href = td.a['href']
-		short_desc = td.a.text
-                offer = get_offer(href)
-                offers.add(offer)
-    return offers
 
 
 #logging.basicConfig(filename='output.log',level=logging.INFO)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-boards = [
-    'https://groups.freecycle.org/group/BordonAltonPetersfieldUK/posts/offer',
-    'https://groups.freecycle.org/group/Farnborough_AldershotUK/posts/offer',
-    'https://groups.freecycle.org/group/godalmingUK/posts/offer',
-    'https://groups.freecycle.org/group/GosportUK/posts/offer',
-    'https://groups.freecycle.org/group/GuildfordUK/posts/offer',
-    'https://groups.freecycle.org/group/HavantUK/posts/offer',
-    'https://groups.freecycle.org/group/PortsmouthUK/posts/offer',
-    'https://groups.freecycle.org/group/Farnham/posts/offer',
-    'https://groups.freecycle.org/group/FarehamUK/posts/offer',
-    'https://groups.freecycle.org/group/WokingUK/posts/offer']
+houses = ['https://www.rightmove.co.uk/property-for-sale/property-73000526.html']
 
-keywords = ['printer','drill','tool','dewalt', 'saw', 'driver','router', 'hub', 'computer']
+for house in houses:
+    rm_property = get_rightmove_property(house)
+    get_crime_stats(float(rm_property.geo_coords.latitude), float(rm_property.geo_coords.longitude))
+    rm_property.geo_coords.latitude
 
-
-for board in boards:
-    print("###############################################################")
-    print("###############################################################")
-    print(board)
-    print("###############################################################")
-    print("###############################################################")
-    offers = get_offers('{}?resultsperpage=100'.format(board))
-    for offer in offers:
-        if any(imap(offer.full_desc.__contains__, keywords) or imap(offer.short_desc.__contains__, keywords)):
-            print(offer.title)
-            print(offer.post_id)
-            print(offer.location)
-            print(offer.date)
-            print(offer.image_url)
-            print(offer.full_desc)
-            print(offer.url)
-            print('---------------------------------------')
