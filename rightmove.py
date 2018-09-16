@@ -9,25 +9,17 @@ import json
 from pprint import pprint 
 from basic_request import *
 from google_api import *
+from location import *
 
 class rightmove_property(object):
     url = ""
-    address = ""
-    street_name = ""
+    ad_address = ""
     geo_coords = None
-    def __init__(self, url, address, geo_coords):
+    rough_address = None
+    def __init__(self, url, ad_address, geo_coords):
         self.url = url
-        self.address = address
+        self.ad_address = ad_address
         self.geo_coords = geo_coords
-
-class geo_coords(object):
-    latitude = ""
-    longitude = ""
-
-    def __init__(self, latitude, longitude):
-        self.latitude = latitude 
-        self.longitude = longitude
-
 
 def get_lat_long(soup):
     """
@@ -41,31 +33,6 @@ def get_lat_long(soup):
     latitude = re.search('latitude=([^&]*)', mini_map_src).group(1)
     return geo_coords(latitude, longitude)
 
-def get_street_name_old(rightmove_property):
-    if rightmove_property == None: 
-        raise Exception("rightmove_property cannot be None")
-    
-    geo_coords = rightmove_property.geo_coords
-    if geo_coords == None: 
-        raise Exception("geo_coords cannot be None")
-    
-    data = None
-    route = None
-    with open('data.json') as data_file: 
-        data = json.load(data_file)
-        addresses = data['results']
-        for address in addresses:
-            address_parts = address['address_components']
-            for address_part in address_parts:
-                if 'route' in address_part['types']:
-                    route = address_part['long_name']
-                    print(route)
-        
-            if route in rightmove_property.address:
-                print("{} is in {}".format(route, rightmove_property.address))
-                break
-    return route
-
 def get_rightmove_property(url):
     """
     Pase html of the given URL to get a property
@@ -74,12 +41,9 @@ def get_rightmove_property(url):
     if response is None:
         raise Exception('Error retrieving content at {}'.format(url))
     soup = BeautifulSoup(response, 'html.parser')
-    address = soup.find(itemprop = 'streetAddress')['content']
+    ad_address = soup.find(itemprop = 'streetAddress')['content']
     geo_coords = get_lat_long(soup)
-    rm_property = rightmove_property(url, address, geo_coords)
-    street_name = get_street_name(rm_property.geo_coords.latitude, rm_property.geo_coords.longitude, rm_property.address)
-    rm_property.street_name = street_name
-
-    
-    
+    rm_property = rightmove_property(url, ad_address, geo_coords)
+    rough_address = get_rough_address_from_lat_long(rm_property.geo_coords.latitude, rm_property.geo_coords.longitude, rm_property.ad_address)
+    rm_property.rough_address = rough_address
     return rm_property

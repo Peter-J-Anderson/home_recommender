@@ -21,7 +21,8 @@ houses = ['https://www.rightmove.co.uk/property-for-sale/property-73000526.html'
 
 for house in houses:
     rm_property = get_rightmove_property(house)
-    prices_paid = get_additional_prices_paid(rm_property.street_name, 'bordon') 
+    prices_paid = get_additional_prices_paid(rm_property.rough_address.street_name, rm_property.rough_address.postal_town) 
     crime_stats = get_crime_stats(float(rm_property.geo_coords.latitude), float(rm_property.geo_coords.longitude))
+    pprint(crime_stats)
     
 
