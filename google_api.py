@@ -12,16 +12,18 @@ from basic_request import *
 from location import *
 
 class property_rough_address(object):
-	street_name = ""
-	postal_town = ""
-	county = ""
-	country = ""
+    street_name = ""
+    postal_town = ""
+    county = ""
+    country = ""
+    postal_code = ""
 
-	def __init__(self, street_name, postal_town, county, country):
-		self.street_name = street_name
-		self.postal_town = postal_town
-		self.county = county
-		self.coutry = country
+    def __init__(self, street_name, postal_town, county, country, postal_code):
+        self.street_name = street_name
+        self.postal_town = postal_town
+        self.county = county
+        self.coutry = country
+        self.postal_code = postal_code
 
 def get_rough_address_from_lat_long(latitude, longitude, scraped_address):
     geoencoding_api_key = os.environ['GOOGLE_GEOCODING_API_KEY']
@@ -47,7 +49,7 @@ def get_rough_address_from_lat_long(latitude, longitude, scraped_address):
     postal_town = [part for part in address_components if 'postal_town' in part['types']][0]['long_name'] 
     county = [part for part in address_components if 'administrative_area_level_2' in part['types']][0]['long_name']  
     country = [part for part in address_components if 'country' in part['types']][0]['long_name'] 
-
-    rough_address = property_rough_address(street_name, postal_town, county, country)
+    postal_code = [part for part in address_components if 'postal_code' in part['types']][0]['long_name'] 
+    rough_address = property_rough_address(street_name, postal_town, county, country, postal_code)
 
     return rough_address
