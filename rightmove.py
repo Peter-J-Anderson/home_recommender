@@ -21,6 +21,10 @@ class rightmove_property(object):
         self.ad_address = ad_address
         self.geo_coords = geo_coords
 
+    def output(self):
+        print(self.url)
+        print(self.ad_address)
+
 def get_lat_long(soup):
     """
     get lat long of property from the minimap display

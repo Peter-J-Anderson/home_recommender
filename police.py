@@ -27,6 +27,13 @@ class crime_instance:
         self.crime_id = crime_id
         self.persistent_id = persistent_id
 
+    def output(self):
+        print("context: {}".format(self.context))
+        print("\tmonth: {}".format(self.month))
+        print("\tstread_desc: {}".format(self.location_street_desc))
+        print("\toutcome_status: {}".format(self.outcome_status))
+        print("\tid: {}".format(self.persistent_id))
+
 def get_crime_stats(latitude, longitude):
     """
     get crime stats 
@@ -38,7 +45,7 @@ def get_crime_stats(latitude, longitude):
 
     api_args = "all-crime?poly={}:{}:{}&date=2017-01".format(lat_long1, lat_long2, lat_long3)
     request_url = "{}/{}".format(police_url, api_args)
-    print(request_url)
+    # print(request_url)
     json_data = simple_get(request_url)
     data = json.loads(json_data)
 

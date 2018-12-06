@@ -31,6 +31,10 @@ class land_registry_entry:
         self.transaction_id = transaction_id
         self.item_url = item_url
 
+    def output(self):
+        print("type: {}".format(self.property_type))
+        print("\tprice_paid: {}".format(self.price_paid))
+
 def get_additional_prices_paid(street_name, town):
     """
     hit landregistry to see what prices houses sold for in the same area (road)
@@ -61,7 +65,6 @@ def get_additional_prices_paid(street_name, town):
         lr_entry.district = parts[12]
         lr_entry.county = parts[13]
         lr_entry.record_status = parts[14]
-
         transations.append(lr_entry)
 
     return transations
