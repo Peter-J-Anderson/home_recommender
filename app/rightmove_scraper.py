@@ -1,12 +1,24 @@
 #!/usr/bin/env python
+import os
 import logging
+import re
+import json
+
 from requests import get 
 from requests.exceptions import RequestException
 from contextlib import closing
 from bs4 import BeautifulSoup
-import re
-import json
 from pprint import pprint 
+
+import sentry_sdk
+from sentry_sdk import configure_scope
+
+sentry_sdk.init(os.environ['SENTRY_DSN'])
+with configure_scope() as scope:
+    scope.user = {
+        "username": r'{}\{}'.format(os.environ['USERDOMAIN'],os.environ['USERNAME']),
+        "computername": r'{}'.format(os.environ['COMPUTERNAME'])
+    }
 
 from basic_request import *
 from rightmove import *

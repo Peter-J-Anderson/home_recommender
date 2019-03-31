@@ -1,0 +1,13 @@
+version: '3'
+services:
+  home_recommender:
+    build: .
+    restart: always
+    ports:
+      - "80:80"
+    environment:
+      - COMPUTERNAME=${COMPUTERNAME:?err}
+      - USERNAME=${USERNAME:?err}
+      - USERDOMAIN=${USERDOMAIN:?err}
+      - GOOGLE_GEOCODING_API_KEY=${GOOGLE_GEOCODING_API_KEY:?err}
+      - SENTRY_DSN=${HOME_RECOMMENDER_SENTRY_DSN:?err}
