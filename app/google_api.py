@@ -31,7 +31,7 @@ class property_rough_address(object):
         print("{}".format(self.county))
 
 def get_rough_address_from_lat_long(latitude, longitude, scraped_address):
-    geoencoding_api_key = os.environ['GOOGLE_GEOCODING_API_KEY']
+    geoencoding_api_key = os.environ['GOOGLE_MAPS_API_KEY']
     geoencoding_url = "https://maps.googleapis.com/maps/api/geocode/json?latlng={},{}&key={}".format(latitude, longitude,geoencoding_api_key)
     json_data = simple_get(geoencoding_url)
     data = json.loads(json_data)
@@ -60,3 +60,11 @@ def get_rough_address_from_lat_long(latitude, longitude, scraped_address):
     postal_code = [part for part in address_components if 'postal_code' in part['types']][0]['long_name'] 
     rough_address = property_rough_address(street_name, postal_town, county, country, postal_code)
     return rough_address
+
+def get_travel_time(from_location, to_location):
+    google_maps_api_key = os.environ['GOOGLE_MAPS_API_KEY']
+    distance_matrix_url = "https://maps.googleapis.com/maps/api/distancematrix/json?units=imperial&origins={}&destinations={}&key={}".format(from_location, to_location, google_maps_api_key)
+    json_data = simple_get(distance_matrix_url)
+    data = json.loads(json_data)
+    travel_time = data["rows"][0]["elements"][0]["duration"]["text"]
+    return travel_time
