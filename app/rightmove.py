@@ -6,6 +6,7 @@ from contextlib import closing
 from bs4 import BeautifulSoup
 import re
 import json
+from location import GeoCoords
 from pprint import pprint 
 from basic_request import *
 from google_api import *
@@ -35,7 +36,7 @@ def get_lat_long(soup):
     mini_map_src = soup.find("a", {"class" : "js-ga-minimap"}).img['src']
     longitude = re.search('longitude=([^&]*)', mini_map_src).group(1)
     latitude = re.search('latitude=([^&]*)', mini_map_src).group(1)
-    return geo_coords(latitude, longitude)
+    return GeoCoords(latitude, longitude)
 
 def get_rightmove_property(url):
     """
