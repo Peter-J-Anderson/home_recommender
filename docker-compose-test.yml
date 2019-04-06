@@ -1,24 +1,12 @@
 version: '3'
 services:
   test:
+    volumes:
+      - ./app:/app
     build: 
       context: .
       dockerfile: dockerfile-test
     restart: "no"
-    ports:
-      - "90:80"
-    environment:
-      - COMPUTERNAME=${COMPUTERNAME:?err}
-      - USERNAME=${USERNAME:?err}
-      - USERDOMAIN=${USERDOMAIN:?err}
-      - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY:?err}
-      - SENTRY_DSN=${HOME_RECOMMENDER_SENTRY_DSN:?err}
-
-  prod:
-    build: 
-      context: .
-      dockerfile: Dockerfile
-    restart: on-failure
     ports:
       - "80:80"
     environment:

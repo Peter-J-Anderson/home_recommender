@@ -1,4 +1,5 @@
-requests
-bs4
-more-itertools
+pylint==1.9
+requests==2.7.0
+beautifulsoup4==4.7.1
+more-itertools==2.3
 sentry-sdk==0.7.8
