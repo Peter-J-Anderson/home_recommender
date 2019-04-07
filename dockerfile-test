@@ -7,6 +7,4 @@ RUN pip install pylint
 COPY requirements.txt requirements.txt
 RUN pip install -r requirements.txt
 
-COPY ./app ./app
-
-CMD ["pylint", "app"]
+CMD ["pylint", "*.py"]

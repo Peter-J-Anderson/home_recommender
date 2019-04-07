@@ -4,10 +4,11 @@ services:
     build: 
       context: .
       dockerfile: dockerfile-test
+    volumes:
+      - ./app:/home_recommender/app
     restart: "no"
-    ports:
-      - "90:80"
     environment:
+      - COMPOSE_CONVERT_WINDOWS_PATHS=${COMPOSE_CONVERT_WINDOWS_PATHS:?err}
       - COMPUTERNAME=${COMPUTERNAME:?err}
       - USERNAME=${USERNAME:?err}
       - USERDOMAIN=${USERDOMAIN:?err}
